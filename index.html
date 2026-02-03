@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remote Support</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    background: #0a0e17;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    text-align: center;
+    max-width: 520px;
+    padding: 40px;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: #3b82f6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { width: 28px; height: 28px; }
+
+  .logo-text {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: #151d2e;
+    border: 1px solid #243049;
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+  }
+
+  .card:hover {
+    border-color: #3b82f6;
+    background: #1a2236;
+    transform: translateY(-2px);
+  }
+
+  .card svg {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 14px;
+    stroke: #3b82f6;
+  }
+
+  .card h3 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .card p {
+    font-size: 13px;
+    color: #8899b4;
+    line-height: 1.5;
+  }
+
+  .footer {
+    font-size: 12px;
+    color: #4a5a76;
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  .footer code {
+    background: #1a2236;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #243049;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <span class="logo-text">Remote Support</span>
+    </div>
+
+    <div class="cards">
+      <a href="/operator.html" class="card">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M20 21a8 8 0 10-16 0"/>
+          <path d="M15 11l2 2 4-4"/>
+        </svg>
+        <h3>Operator</h3>
+        <p>View remote screens and provide hands-on support.</p>
+      </a>
+      <a href="#" class="card" onclick="return false;" style="cursor: default;">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <path d="M9 9l6 6M15 9l-6 6"/>
+        </svg>
+        <h3>Client</h3>
+        <p>Run the Python agent on the machine needing support.</p>
+      </a>
+    </div>
+
+    <div class="footer">
+      Client: <code>python client.py --server ws://YOUR_IP:3000</code>
+    </div>
+  </div>
+</body>
+</html>

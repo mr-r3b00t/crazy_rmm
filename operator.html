@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remote Support — Operator Console</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-tertiary: #1a2236;
+    --bg-card: #151d2e;
+    --border: #243049;
+    --border-active: #3b82f6;
+    --text-primary: #e2e8f0;
+    --text-secondary: #8899b4;
+    --text-muted: #4a5a76;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --green: #22c55e;
+    --green-bg: rgba(34, 197, 94, 0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.1);
+    --yellow: #f59e0b;
+    --yellow-bg: rgba(245, 158, 11, 0.1);
+    --radius: 8px;
+    --mono: "JetBrains Mono", monospace;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top Bar ─────────────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { width: 16px; height: 16px; }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.waiting   { background: var(--yellow); animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn:hover { background: var(--bg-card); border-color: var(--text-muted); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-danger {
+    background: var(--red-bg);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+  /* ── Main Layout ─────────────────────────────────── */
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  .sidebar {
+    width: 300px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  .connect-panel {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pin-input-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pin-input {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    letter-spacing: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .pin-input::placeholder {
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    font-size: 12px;
+  }
+
+  .pin-input:focus { border-color: var(--accent); }
+
+  .session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .session-card {
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .session-card:hover {
+    border-color: var(--accent);
+    background: var(--bg-tertiary);
+  }
+
+  .session-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .session-pin {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  .session-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  .session-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .session-info span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .info-panel {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .info-item {
+    background: var(--bg-primary);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .info-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .info-value {
+    font-size: 13px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* ── Screen Viewer ───────────────────────────────── */
+  .viewer {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .viewer-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .viewer-placeholder svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .viewer-placeholder h3 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+  }
+
+  .viewer-placeholder p {
+    font-size: 13px;
+    max-width: 320px;
+  }
+
+  #screen-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: auto;
+    cursor: none;
+  }
+
+  .remote-cursor {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+    z-index: 10;
+    display: none;
+  }
+
+  /* ── Toolbar overlay on viewer ──────────────────── */
+  .viewer-toolbar {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    backdrop-filter: blur(12px);
+    z-index: 20;
+  }
+
+  .viewer-toolbar .btn { font-size: 11px; padding: 5px 10px; }
+
+  .toolbar-divider {
+    width: 1px;
+    background: var(--border);
+    margin: 2px 4px;
+  }
+
+  .fps-display {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+  }
+
+  /* ── Toast Notifications ─────────────────────────── */
+  .toasts {
+    position: fixed;
+    top: 64px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: var(--sans);
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: slideIn 0.25s ease;
+    max-width: 340px;
+  }
+
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error   { border-left: 3px solid var(--red); }
+  .toast.info    { border-left: 3px solid var(--accent); }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ── Keyboard Indicator ──────────────────────────── */
+  .keyboard-indicator {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .keyboard-indicator.active {
+    opacity: 1;
+    color: var(--green);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── Hidden ──────────────────────────────────────── */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══ Top Bar ═══ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      Remote Support
+    </div>
+    <div class="status-pill" id="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Disconnected</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn" id="btn-fullscreen" title="Fullscreen viewer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      Fullscreen
+    </button>
+    <button class="btn btn-danger hidden" id="btn-disconnect">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Disconnect
+    </button>
+  </div>
+</div>
+
+<!-- ═══ Main Content ═══ -->
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">Connect to Session</div>
+    <div class="connect-panel">
+      <div class="pin-input-group">
+        <input type="text" class="pin-input" id="pin-input" placeholder="PIN" maxlength="6" autocomplete="off">
+        <button class="btn btn-primary" id="btn-connect">Connect</button>
+      </div>
+    </div>
+    <div class="sidebar-header">Waiting Sessions</div>
+    <div class="session-list" id="session-list">
+      <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+        No sessions waiting...
+      </div>
+    </div>
+    <div class="info-panel hidden" id="info-panel">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Hostname</div>
+          <div class="info-value" id="info-hostname">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">OS</div>
+          <div class="info-value" id="info-os">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Resolution</div>
+          <div class="info-value" id="info-resolution">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Latency</div>
+          <div class="info-value" id="info-latency">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer -->
+  <div class="viewer" id="viewer">
+    <div class="viewer-placeholder" id="viewer-placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <circle cx="12" cy="10" r="2"/>
+      </svg>
+      <h3>No Active Session</h3>
+      <p>Enter a support PIN or select a waiting session from the sidebar to begin remote assistance.</p>
+    </div>
+    <canvas id="screen-canvas" class="hidden"></canvas>
+
+    <!-- Keyboard capture indicator -->
+    <div class="keyboard-indicator" id="keyboard-indicator">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h8"/></svg>
+      <span id="keyboard-indicator-text">Keyboard captured</span>
+    </div>
+
+    <!-- Floating toolbar -->
+    <div class="viewer-toolbar hidden" id="viewer-toolbar">
+      <button class="btn" id="btn-toggle-input" title="Toggle remote input">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4l10.5-10.5a1.5 1.5 0 00-4-4L4 16v4z"/></svg>
+        Control: ON
+      </button>
+      <div class="toolbar-divider"></div>
+      <button class="btn" id="btn-send-cad" title="Send Ctrl+Alt+Del">Ctrl+Alt+Del</button>
+      <div class="toolbar-divider"></div>
+      <div class="fps-display" id="fps-display">— fps</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let ws = null;
+let sessionId = null;
+let inputEnabled = true;
+let isConnected = false;
+let screenWidth = 0;
+let screenHeight = 0;
+let frameCount = 0;
+let lastFpsUpdate = performance.now();
+let currentFps = 0;
+
+const canvas = document.getElementById("screen-canvas");
+const ctx = canvas.getContext("2d");
+const viewer = document.getElementById("viewer");
+
+// ─── WebSocket Connection ─────────────────────────────────────────────────────
+
+function connectWs() {
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(`${protocol}//${location.host}`);
+  ws.binaryType = "arraybuffer";
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: "operator_join" }));
+    setStatus("waiting", "Waiting for session");
+    toast("Connected to server", "info");
+  };
+
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) {
+      renderFrame(e.data);
+      return;
+    }
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+
+  ws.onclose = () => {
+    setStatus("disconnected", "Disconnected");
+    isConnected = false;
+    setTimeout(connectWs, 3000);
+  };
+
+  ws.onerror = () => {};
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case "session_list":
+      renderSessionList(msg.sessions);
+      break;
+
+    case "connected":
+      sessionId = msg.sessionId;
+      isConnected = true;
+      const info = msg.clientInfo || {};
+      document.getElementById("info-hostname").textContent = info.hostname || "—";
+      document.getElementById("info-os").textContent = info.os || "—";
+      document.getElementById("info-resolution").textContent = info.screen || "—";
+      document.getElementById("info-panel").classList.remove("hidden");
+      document.getElementById("viewer-placeholder").classList.add("hidden");
+      document.getElementById("screen-canvas").classList.remove("hidden");
+      document.getElementById("viewer-toolbar").classList.remove("hidden");
+      document.getElementById("btn-disconnect").classList.remove("hidden");
+      setStatus("connected", `Connected — ${info.hostname || "Remote"}`);
+      toast(`Connected to ${info.hostname || "remote machine"}`, "success");
+      break;
+
+    case "screen_info":
+      screenWidth = msg.width;
+      screenHeight = msg.height;
+      document.getElementById("info-resolution").textContent = `${msg.width}×${msg.height}`;
+      break;
+
+    case "client_disconnected":
+      handleSessionEnd("Client disconnected");
+      break;
+
+    case "error":
+      toast(msg.message, "error");
+      break;
+  }
+}
+
+// ─── Frame Rendering ──────────────────────────────────────────────────────────
+
+const frameImage = new Image();
+let pendingBlob = null;
+
+function renderFrame(data) {
+  const blob = new Blob([data], { type: "image/jpeg" });
+  const url = URL.createObjectURL(blob);
+
+  frameImage.onload = () => {
+    if (canvas.width !== frameImage.width || canvas.height !== frameImage.height) {
+      canvas.width = frameImage.width;
+      canvas.height = frameImage.height;
+    }
+    ctx.drawImage(frameImage, 0, 0);
+    URL.revokeObjectURL(url);
+
+    // FPS counter
+    frameCount++;
+    const now = performance.now();
+    if (now - lastFpsUpdate >= 1000) {
+      currentFps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
+      frameCount = 0;
+      lastFpsUpdate = now;
+      document.getElementById("fps-display").textContent = `${currentFps} fps`;
+    }
+  };
+
+  frameImage.src = url;
+}
+
+// ─── Input Events ─────────────────────────────────────────────────────────────
+
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+}
+
+function sendInput(msg) {
+  if (!isConnected || !inputEnabled || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify(msg));
+}
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!isConnected || !inputEnabled) return;
+  const { x, y } = getCanvasCoords(e);
+  sendInput({ type: "mouse_move", x, y });
+});
+
+canvas.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (!isConnected || !inputEnabled) return;
+  const { x, y } = getCanvasCoords(e);
+  sendInput({ type: "mouse_click", x, y, button: e.button });
+});
+
+canvas.addEventListener("dblclick", (e) => {
+  e.preventDefault();
+  if (!isConnected || !inputEnabled) return;
+  const { x, y } = getCanvasCoords(e);
+  sendInput({ type: "mouse_double_click", x, y, button: e.button });
+});
+
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  if (!isConnected || !inputEnabled) return;
+  const { x, y } = getCanvasCoords(e);
+  sendInput({ type: "mouse_click", x, y, button: 2 });
+});
+
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (!isConnected || !inputEnabled) return;
+  const { x, y } = getCanvasCoords(e);
+  const delta = e.deltaY > 0 ? -3 : 3;
+  sendInput({ type: "mouse_scroll", x, y, delta });
+}, { passive: false });
+
+// Keyboard — capture when viewer is focused
+let keyboardCaptured = false;
+
+viewer.addEventListener("mouseenter", () => {
+  if (isConnected && inputEnabled) {
+    keyboardCaptured = true;
+    document.getElementById("keyboard-indicator").classList.add("active");
+  }
+});
+
+viewer.addEventListener("mouseleave", () => {
+  keyboardCaptured = false;
+  document.getElementById("keyboard-indicator").classList.remove("active");
+});
+
+document.addEventListener("keydown", (e) => {
+  if (!keyboardCaptured || !isConnected || !inputEnabled) return;
+
+  // Don't capture F11 (native fullscreen) or F12 (devtools)
+  if (e.key === "F11" || e.key === "F12") return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Send as combo if modifier keys are held
+  const modifiers = [];
+  if (e.ctrlKey) modifiers.push("Control");
+  if (e.altKey) modifiers.push("Alt");
+  if (e.shiftKey && e.key !== "Shift") modifiers.push("Shift");
+  if (e.metaKey) modifiers.push("Meta");
+
+  if (modifiers.length > 0 && !["Control", "Alt", "Shift", "Meta"].includes(e.key)) {
+    sendInput({ type: "key_combo", keys: [...modifiers, e.key] });
+  } else if (!["Control", "Alt", "Shift", "Meta"].includes(e.key)) {
+    sendInput({ type: "key_press", key: e.key });
+  }
+});
+
+// ─── Session List ─────────────────────────────────────────────────────────────
+
+function renderSessionList(sessions) {
+  const container = document.getElementById("session-list");
+  if (sessions.length === 0) {
+    container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">No sessions waiting...</div>`;
+    return;
+  }
+
+  container.innerHTML = sessions.map(s => {
+    const info = s.clientInfo || {};
+    const ago = timeAgo(s.createdAt);
+    return `
+      <div class="session-card" onclick="connectToSession('${s.pin}')">
+        <div class="session-card-header">
+          <span class="session-pin">${s.pin}</span>
+          <span class="session-time">${ago}</span>
+        </div>
+        <div class="session-info">
+          <span>${info.hostname || "Unknown"} — ${info.os || "Unknown OS"}</span>
+          <span>${info.screen || ""}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  return `${Math.floor(mins / 60)}h ago`;
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+
+function connectToSession(pin) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    toast("Not connected to server", "error");
+    return;
+  }
+  ws.send(JSON.stringify({ type: "operator_connect", pin }));
+}
+
+document.getElementById("btn-connect").addEventListener("click", () => {
+  const pin = document.getElementById("pin-input").value.trim();
+  if (pin.length !== 6) {
+    toast("Enter a 6-digit PIN", "error");
+    return;
+  }
+  connectToSession(pin);
+});
+
+document.getElementById("pin-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("btn-connect").click();
+});
+
+document.getElementById("btn-disconnect").addEventListener("click", () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "disconnect" }));
+  }
+  handleSessionEnd("You disconnected");
+});
+
+document.getElementById("btn-toggle-input").addEventListener("click", () => {
+  inputEnabled = !inputEnabled;
+  const btn = document.getElementById("btn-toggle-input");
+  btn.innerHTML = inputEnabled
+    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4l10.5-10.5a1.5 1.5 0 00-4-4L4 16v4z"/></svg> Control: ON`
+    : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Control: OFF`;
+  canvas.style.cursor = inputEnabled ? "none" : "default";
+  toast(inputEnabled ? "Remote input enabled" : "Remote input disabled (view only)", "info");
+});
+
+document.getElementById("btn-send-cad").addEventListener("click", () => {
+  sendInput({ type: "key_combo", keys: ["Control", "Alt", "Delete"] });
+  toast("Sent Ctrl+Alt+Del", "info");
+});
+
+document.getElementById("btn-fullscreen").addEventListener("click", () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    viewer.requestFullscreen();
+  }
+});
+
+function handleSessionEnd(reason) {
+  isConnected = false;
+  sessionId = null;
+  document.getElementById("viewer-placeholder").classList.remove("hidden");
+  document.getElementById("screen-canvas").classList.add("hidden");
+  document.getElementById("viewer-toolbar").classList.add("hidden");
+  document.getElementById("btn-disconnect").classList.add("hidden");
+  document.getElementById("info-panel").classList.add("hidden");
+  setStatus("waiting", "Waiting for session");
+  toast(reason, "info");
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function setStatus(state, text) {
+  const dot = document.getElementById("status-dot");
+  const label = document.getElementById("status-text");
+  dot.className = "status-dot";
+  if (state === "connected") dot.classList.add("connected");
+  else if (state === "waiting") dot.classList.add("waiting");
+  label.textContent = text;
+}
+
+function toast(message, type = "info") {
+  const container = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transition = "opacity 0.3s";
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+connectWs();
+</script>
+</body>
+</html>
