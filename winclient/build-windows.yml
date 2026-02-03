@@ -1,0 +1,68 @@
+name: Build Windows Client
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller websockets mss Pillow pyautogui
+
+      - name: Build executable
+        run: |
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --noconsole `
+            --name "RemoteSupportClient" `
+            --hidden-import websockets `
+            --hidden-import websockets.legacy `
+            --hidden-import websockets.legacy.client `
+            --hidden-import websockets.legacy.server `
+            --hidden-import websockets.legacy.protocol `
+            --hidden-import mss `
+            --hidden-import mss.windows `
+            --hidden-import PIL.Image `
+            --hidden-import PIL.JpegImagePlugin `
+            --hidden-import pyautogui `
+            --hidden-import pyautogui._pyautogui_win `
+            --hidden-import pyscreeze `
+            --hidden-import pytweening `
+            --hidden-import pyperclip `
+            --hidden-import mouseinfo `
+            --exclude-module matplotlib `
+            --exclude-module numpy `
+            --exclude-module scipy `
+            --exclude-module pandas `
+            client_windows.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RemoteSupportClient-windows-x64
+          path: dist/RemoteSupportClient.exe
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/RemoteSupportClient.exe
+          generate_release_notes: true
